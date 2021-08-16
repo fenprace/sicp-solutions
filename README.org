@@ -1,0 +1,24 @@
+#+TITLE: SICP Solutions
+#+STARTUP: showall
+#+STARTUP: indent
+
+* SICP Solutions
+This repository contains the notes I took during I was reading the
+book /[[https://mitpress.mit.edu/sites/default/files/sicp/index.html][Sturcture and Interpretation of Computer Programs]]/.
+
+** Preset
+To execute code blocks in this project inside Org Mode, you need
+to have Racket on your device. Put [[https://github.com/DEADB17/ob-racket][ob-racket]] inside your Emacs
+load path and run the following block before any other blocks.
+This will make sure you have all dependencies installed.  
+
+#+BEGIN_SRC emacs-lisp
+(setq org-confirm-babel-evaluate nil)
+(use-package racket-mode)
+(use-package ob-racket
+  :load-path "~/.emacs.d/packages"
+  :after org
+  :pin manual
+  :config
+  (append '((racket . t) (scribble . t)) org-babel-load-languages))
+#+END_SRC
