@@ -22,3 +22,6 @@ This will make sure you have all dependencies installed.
   :config
   (append '((racket . t) (scribble . t)) org-babel-load-languages))
 #+END_SRC
+
+** Resources
+- [[http://community.schemewiki.org/?SICP-Solutions][SICP Solutions from Community Scheme Wiki]]
