@@ -21,6 +21,11 @@ To execute code blocks in this file, you need ~ob-racket~ installed.
 #+RESULTS:
 : t
 
+#+NAME: nil
+#+BEGIN_SRC racket
+(define nil '())
+#+END_SRC
+
 * Chapter 2 Building Abstractions with Data
 :PROPERTIES:
 :VISIBILITY: children
@@ -1350,7 +1355,7 @@ accumulations:
 **** Answer
 Just put the definition of ~accumulate~ here:
 
-#+NAME: e-2-33-a
+#+NAME: accumulate
 #+BEGIN_SRC racket
 (define (accumulate op initial sequence)
   (if (null? sequence)
@@ -1360,7 +1365,7 @@ Just put the definition of ~accumulate~ here:
 #+END_SRC
 
 #+BEGIN_SRC racket
-<<e-2-33-a>>
+<<accumulate>>
 
 (define (map p sequence)
   (accumulate
@@ -1375,7 +1380,7 @@ Just put the definition of ~accumulate~ here:
 | 2 | 3 | 4 |
 
 #+BEGIN_SRC racket
-<<e-2-33-a>>
+<<accumulate>>
 
 (define (append seq1 seq2)
   (accumulate cons seq2 seq1))
@@ -1387,7 +1392,7 @@ Just put the definition of ~accumulate~ here:
 | 1 | 2 | 3 | 4 |
 
 #+BEGIN_SRC racket
-<<e-2-33-a>>
+<<accumulate>>
 
 (define (length sequence)
   (accumulate (lambda (e n) (+ 1 n)) 0 sequence))
@@ -1413,7 +1418,7 @@ structures the computation as
 (...(a_{n}x + a_{n-1})x + ... + a_{1})x + a_{0}.
 #+END_CENTER
 
-In other words, we start with a_{n}, multiply by x, add a_{n-1},
+In other words, we start with a_n, multiply by x, add a_{n-1},
 multiply by x, and so on, until we reach a_{0}.
 
 Fill in the following template to produce a procedure that
@@ -1428,7 +1433,7 @@ a_{0} through a_{n}.
               coefficient-sequence))
 #+END_SRC
 
-For example, to compute 1 + 3x + 5x^{3} + x^{5} at x = 2
+For example, to compute 1 + 3x + 5x^{3} + x^{5} at x =
 you would evaluate
 
 #+BEGIN_SRC racket
@@ -1438,7 +1443,7 @@ you would evaluate
 **** Answer
 
 #+BEGIN_SRC racket
-<<e-2-33-a>>
+<<accumulate>>
 
 (define (horner-eval x coefficient-sequence)
   (accumulate (lambda (this-coeff higher-terms)
@@ -1453,10 +1458,159 @@ you would evaluate
 : 79
 
 
-*** Exercise 2.35
+*** Exercise 2.35                                                  :solved:
 Redefine ~count-leaves~ from Section 2.2.2 as an accumulation:
 
 #+BEGIN_SRC racket
 (define (count-leaves t)
   (accumulate ⟨??⟩ ⟨??⟩ (map ⟨??⟩ ⟨??⟩)))
 #+END_SRC
+
+**** Answer
+
+#+BEGIN_SRC racket
+<<accumulate>>
+
+(define (count-leaves t)
+  (accumulate
+   (lambda (x y) (+ x y))
+   0
+   (map (lambda (n) (if (pair? n) (count-leaves n) 1)) t)))
+
+(count-leaves (list 1 2 3 (list 4 5)))
+#+END_SRC
+
+#+RESULTS:
+: 5
+
+*** Exercise 2.36                                                  :solved:
+The procedure ~accumulate-n~ is similar to accumulate except
+that it takes as its third argument a sequence of sequences,
+which are all assumed to have the same number of elements. It
+applies the designated accumulation procedure to combine all the
+first elements of the sequences, all the second elements of the
+sequences, and so on, and returns a sequence of the results. For
+instance, if ~s~ is a sequence containing four sequences,
+~((1 2 3) (4 5 6) (7 8 9) (10 11 12))~, then the value of
+~(accumulate-n + 0 s)~ should be the sequence ~(22 26 30)~. Fill
+in the missing expressions in the following definition of
+~accumulate-n~:
+
+#+BEGIN_SRC racket
+(define (accumulate-n op init seqs)
+  (if (null? (car seqs))
+      nil
+      (cons (accumulate op init ⟨??⟩)
+            (accumulate-n op init ⟨??⟩))))
+#+END_SRC
+
+**** Answer
+
+#+BEGIN_SRC racket
+<<accumulate>>
+
+(define nil '())
+
+(define (accumulate-n op init seqs)
+  (if (null? (car seqs))
+      nil
+      (cons (accumulate op init (map car seqs))
+            (accumulate-n op init (map cdr seqs)))))
+
+(define s (list (list 1 2 3) (list 4 5 6) (list 7 8 9) (list 10 11 12)))
+(accumulate-n + 0 s)
+#+END_SRC
+
+#+RESULTS:
+| 22 | 26 | 30 |
+
+*** Exercise 2.37
+Suppose we represent vectors *v* = (v_{i} ) as sequences of
+numbers, and matrices *m* = (m_{ij}) as sequences of vectors (
+the rows of the matrix). For example, the matrix
+
+#+BEGIN_CENTER
+┌ 1 2 3 4 ┐
+│ 4 5 6 6 │
+└ 6 7 8 9 ┘
+#+END_CENTER
+
+is represented as the sequence ~((1 2 3 4) (4 5 6 6) (6 7 8 9))~.
+With this representation, we can use sequence operations to
+concisely express the basic matrix and vector operations. These
+operations (which are described in any book on matrix algebra)
+are the following:
+
+| ~(dot-product v w)~     | returns the sum Σ_{i}v_{i}w_{i};  |
+| ~(matrix-*-vector m v)~ | returns the vector *t*,           |
+|                         | where t_{i} = Σ{i}m{ij}v{j};      |
+| (matrix-*-matrix m n)   | returns the matrix *p*,           |
+|                         | where p_{ij} = Σ_{k}m_{ik}n_{kj}; |
+| (transpose m)           | returns the matrix *n*,           |
+|                         | where n_{ij} = m_{ji}             |
+
+We can define the dot product as
+
+#+BEGIN_SRC racket
+(define (dot-product v w)
+  (accumulate + 0 (map * v w)))
+#+END_SRC
+
+Fill in the missing expressions in the following procedures for
+computing the other matrix operations. (The procedure
+~accumulate-n~ is defined in [[Exercise 2.36]].)
+
+#+BEGIN_SRC racket
+(define (matrix-*-vector m v)
+  (map ⟨??⟩ m))
+(define (transpose mat)
+  (accumulate-n ⟨??⟩ ⟨??⟩ mat))
+(define (matrix-*-matrix m n)
+  (let ((cols (transpose n)))
+    (map ⟨??⟩ m)))
+#+END_SRC
+
+**** Answer
+
+*** Exercise 2.38
+The ~accumulate~ procedure is also known as fold-right, because
+it combines the first element of the sequence with the result of
+combining all the elements to the right. There is also a
+~fold-left~, which is similar to ~fold-right~, except that it
+combines elements working in the opposite direction:
+
+#+BEGIN_SRC racket
+(define (fold-left op initial sequence)
+  (define (iter result rest)
+    (if (null? rest)
+        result
+        (iter (op result (car rest))
+              (cdr rest))))
+  (iter initial sequence))
+#+END_SRC
+
+What are the values of
+
+#+BEGIN_SRC racket
+(fold-right / 1 (list 1 2 3))
+(fold-left / 1 (list 1 2 3))
+(fold-right list nil (list 1 2 3))
+(fold-left list nil (list 1 2 3))
+#+END_SRC
+
+Give a property that op should satisfy to guarantee that
+~fold-right~ and ~fold-left~ will produce the same values for
+any sequence.
+
+*** Exercise 2.39
+Complete the following definitions of ~reverse~ ([[Exercise 2.18]])
+in terms of ~fold-right~ and ~fold-left~ from [[Exercise 2.38]]:
+
+#+BEGIN_SRC racket
+(define (reverse sequence)
+  (fold-right (lambda (x y) ⟨??⟩) nil sequence))
+(define (reverse sequence)
+  (fold-left (lambda (x y) ⟨??⟩) nil sequence))
+#+END_SRC
+
+
