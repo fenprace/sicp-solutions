@@ -1,0 +1,529 @@
+#+TITLE: SICP 2.1
+#+STARTUP: overview
+#+STARTUP: indent
+#+PROPERTY: header-args :noweb yes
+#+PROPERTY: header-args:racket :lang racket
+
+* Preset
+To execute code blocks in this file, you need ~ob-racket~ installed.
+
+#+BEGIN_SRC emacs-lisp
+(setq org-confirm-babel-evaluate nil)
+(use-package racket-mode)
+(use-package ob-racket
+  :load-path "~/.emacs.d/packages"
+  :after org
+  :pin manual
+  :config
+  (append '((racket . t) (scribble . t)) org-babel-load-languages))
+#+END_SRC
+
+#+RESULTS:
+: t
+
+#+NAME: nil
+#+BEGIN_SRC racket
+(define nil '())
+#+END_SRC
+
+#+RESULTS: nil
+
+* Exercise 2.1                                                       :solved:
+** Answer
+#+BEGIN_SRC racket
+(define (make-rat n d)
+  (if (< d 0)
+      (cons (- n) (- d)) 
+      (cons n d))) 
+#+END_SRC
+
+#+RESULTS:
+
+* Exercise 2.2                                                       :solved:
+** Preset
+#+NAME: print-point
+#+BEGIN_SRC racket
+(define (print-point p)
+  (newline)
+  (display "(")
+  (display (x-point p))
+  (display ",")
+  (display (y-point p))
+  (display ")"))
+#+END_SRC
+
+** Answer
+#+NAME: midpoint-segment
+#+BEGIN_SRC racket
+(define make-segment cons)
+(define start-segment car)
+(define end-segment cdr)
+(define make-point cons)
+(define x-point car)
+(define y-point cdr)
+
+(define (avg2 x y) (/ (+ x y) 2))
+
+(define (midpoint-segment seg)
+  (define start (start-segment seg))
+  (define start-x (x-point start))
+  (define start-y (y-point start))
+  (define end (end-segment seg))
+  (define end-x (x-point end))
+  (define end-y (y-point end))
+  (make-point (avg2 start-x end-x) (avg2 start-y end-y)))
+#+END_SRC
+
+#+RESULTS: midpoint-segment
+
+#+BEGIN_SRC racket
+<<print-point>>
+<<midpoint-segment>>
+
+(print-point
+ (midpoint-segment
+  (make-segment
+   (make-point 1.5 1)
+   (make-point 3 3))))
+#+END_SRC
+
+#+RESULTS:
+: 
+: (2.25,2)
+
+* Exercise 2.3                                                       :solved:
+** Answer
+First representation:
+#+NAME: make-rect-1
+#+BEGIN_SRC racket
+(define (make-rect a b c d) (cons a (cons b (cons c d))))
+
+(define (a-rect rect) (car rect))
+(define (b-rect rect) (cadr rect))
+(define (c-rect rect) (caddr rect))
+(define (d-rect rect) (cdddr rect))
+#+END_SRC
+
+Another representation:
+#+NAME: make-rect-2
+#+BEGIN_SRC racket
+(define (make-rect a b c d) (cons a (cons b (cons c (cons d '())))))
+
+(define (a-rect rect) (car rect))
+(define (b-rect rect) (cadr rect))
+(define (c-rect rect) (caddr rect))
+(define (d-rect rect) (cadddr rect))
+#+END_SRC
+
+#+NAME: peri-rect
+#+BEGIN_SRC racket
+(define (square n) (* n n))
+
+(define (distance a b)
+  (define x-a (x-point a))
+  (define y-a (y-point a))
+  (define x-b (x-point b))
+  (define y-b (y-point b))
+  (sqrt (+ (square (- x-a x-b)) (square (- y-a y-b)))))
+
+(define (peri-rect rect)
+  (define a (a-rect rect))
+  (define b (b-rect rect))
+  (define c (c-rect rect))
+  (define d (d-rect rect))
+  (+ (distance a b) (distance b c) (distance c d) (distance d a)))
+#+END_SRC
+
+Validate the 1st representation:
+#+BEGIN_SRC racket
+<<make-rect-1>>
+<<midpoint-segment>>
+<<peri-rect>>
+
+(define rect (make-rect
+              (make-point 0 0)
+              (make-point 0 1)
+              (make-point 2 1)
+              (make-point 2 0)))
+
+(peri-rect rect)
+#+END_SRC
+
+#+RESULTS:
+: 6
+
+Validate the 2nd representation:
+#+BEGIN_SRC racket
+<<make-rect-2>>
+<<midpoint-segment>>
+<<peri-rect>>
+
+(define rect (make-rect
+              (make-point 0 0)
+              (make-point 0 1)
+              (make-point 2 1)
+              (make-point 2 0)))
+
+(peri-rect rect)
+#+END_SRC
+
+#+RESULTS:
+: 6
+
+* Exercise 2.4                                                       :solved:
+** Preset
+
+#+NAME: cons-car
+#+BEGIN_SRC racket
+(define (cons x y)
+  (lambda (m) (m x y)))
+(define (car z)
+  (z (lambda (p q) p)))
+#+END_SRC
+** Answer
+For given X and Y, ~(cons X Y)~ equals to
+~(lambda (m) X Y)~. Calling ~(car (cons X Y))~, is calling
+~((lambda (m) (m X Y)) (lambda (p q) p))~, which is calling
+~((lambda (p q) p) X Y)~, and yields X. 
+Thus this definition fulfills that:
+#+BEGIN_QUOTE
+For any objects x and y, if z is ~(cons x y)~ then ~(car z)~
+is x and ~(cdr z)~ is y.
+#+END_QUOTE
+
+~cdr~ definition:
+#+BEGIN_SRC racket
+<<cons-car>>
+(define (cdr z)
+  (z (lambda (p q) q)))
+
+(cdr (cons 2 1))
+#+END_SRC
+
+#+RESULTS:
+: 1
+
+* Exercise 2.5                                                       :solved:
+** Answer
+#+BEGIN_SRC racket
+(define (cons a b)
+  (* (expt 2 a) (expt 3 b)))
+(define (car p)
+  (let-values ([(q r) (quotient/remainder p 2)])
+    (cond [(= q 0) 0]
+          [(= r 0) (+ (car q) 1)]
+          [else  0])))
+(define (z-cdr p)
+  (let-values ([(q r) (quotient/remainder p 3)])
+    (cond [(= q 0) 0]
+          [(= r 0) (+ (cdr q) 1)]
+          [else  0])))
+
+(car (cons 3 4))
+#+END_SRC
+
+#+RESULTS:
+: 3
+
+* Exercise 2.6                                                       :solved:
+** Answer
+#+BEGIN_VERSE
+Forgive me for using Haskell-style function annotation here.
+First we have:
+
+add-1 n = f -> x -> f ((n f) x)
+      0 = f -> x -> x
+
+We can get:
+
+1 = add-1 0
+  = f -> x -> f ((0 f) x)
+  = f -> x -> f x
+  
+2 = add-1 1
+  = f -> x -> f ((1 f) x)
+  = f -> x -> f (f x)
+
+We can guess out that:
+
+n = f -> x -> f^n x
+
+add m n = f -> x -> f^m (f^n x)
+        = f -> x -> m f (n f x)
+
+Now we have the direct definition of ~add~, that is:
+
+add = m -> n -> f -> x -> m f (n f x)
+
+Validate this:
+
+add 1 1 = f -> x -> 1 f (1 f x)
+        = f -> x -> f(f(x))
+        = 2
+#+END_VERSE
+
+#+BEGIN_SRC racket
+(define one
+  (lambda (f)
+    (lambda (x)
+      (f x))))
+
+(define two
+  (lambda (f)
+    (lambda (x)
+      (f (f x)))))
+
+(define (add m n)
+  (lambda (f)
+    (lambda (x) ((m f) ((n f) x)))))
+
+;; A validate function
+;; As we know n f x = f^n x, if f = this vf, then
+;; vf x = vf^n x, so if we call n vf 0, it should simply
+;; yields n
+(define (vf a) (+ 1 a))
+
+(((add one two) vf) 0)
+#+END_SRC
+
+#+RESULTS:
+: 3
+
+* Exercise 2.7                                                       :solved:
+** Preset
+#+NAME: e-2-7-a
+#+BEGIN_SRC racket
+(define (add-interval x y)
+  (make-interval (+ (lower-bound x) (lower-bound y))
+                 (+ (upper-bound x) (upper-bound y))))
+
+(define (mul-interval x y)
+  (let ((p1 (* (lower-bound x) (lower-bound y)))
+        (p2 (* (lower-bound x) (upper-bound y)))
+        (p3 (* (upper-bound x) (lower-bound y)))
+        (p4 (* (upper-bound x) (upper-bound y))))
+    (make-interval (min p1 p2 p3 p4)
+                   (max p1 p2 p3 p4))))
+
+(define (div-interval x y)
+  (mul-interval
+   x
+   (make-interval (/ 1.0 (upper-bound y))
+                  (/ 1.0 (lower-bound y)))))
+#+END_SRC
+
+#+NAME: e-2-7-b
+#+BEGIN_SRC racket
+(define (make-interval a b) (cons a b))
+#+END_SRC
+
+** Answer
+#+NAME: e-2-7-c
+#+BEGIN_SRC racket
+(define (lower-bound interval)
+  (car interval))
+
+(define (upper-bound interval)
+  (cdr interval))
+#+END_SRC
+
+* Exercise 2.8                                                       :solved:
+** Answer
+The difference of two intervals should equal to the first
+interval plus the negative of the second interval.
+
+#+NAME: e-2-8
+#+BEGIN_SRC racket 
+<<e-2-7-a>>
+<<e-2-7-b>>
+<<e-2-7-c>>
+
+(require racket/format)
+
+(define (show a)
+  (~a "[" (lower-bound a) ", " (upper-bound a) "]"))
+
+(define (neg-interval a)
+  (make-interval
+   (- (upper-bound a))
+   (- (lower-bound a))))
+
+(define (sub-interval a b)
+  (add-interval a (neg-interval b)))
+
+(show (sub-interval (make-interval 1 2)  (make-interval 1 2)))
+#+END_SRC
+
+#+RESULTS: e-2-8
+: [-1, 1]
+
+* Exercise 2.9                                                       :solved:
+** Answer
+#+BEGIN_VERSE
+For any tow intervals I0 and I1,
+if I0 = [a, b]
+   I1 = [x, y]
+then width(I0) = (b - a) / 2
+     width(I1) = (y - x) / 2
+width(I0 + I1) = width([a + x, b + y])
+               = ((b + y) - (a + x)) / 2
+               = (b - a) / 2 + (y - x) / 2
+               = width(I0) + width(I1)
+Thus width(I0 + I1) = width(I0) + width(I1)
+
+For example, I0 = [0, 0], I1 = [0, 1],
+width(I0) = 0, width(I1) = 0.5,
+width(I0 * I1) = width([0, 1]) = 0.5 != with(I0) * width(I1)
+#+END_VERSE     
+
+* Exercise 2.10                                                      :solved:
+** Answer
+#+NAME: e-2-10
+#+BEGIN_SRC racket
+<<e-2-8>>
+
+(define (div-interval x y)
+  (if (<= (* (lower-bound y) (upper-bound y)) 0)
+      (error "Interval Spans Zero")
+      (mul-interval
+       x
+       (make-interval (/ 1.0 (upper-bound y))
+                      (/ 1.0 (lower-bound y))))))
+
+(show (div-interval (make-interval 1 2) (make-interval 1 1)))
+#+END_SRC
+
+#+RESULTS: e-2-10
+: [1.0, 2.0]
+
+* Exercise 2.11                                                      :solved:
+** Answer
+#+NAME: e-2-11
+#+BEGIN_SRC racket
+<<e-2-10>>
+
+(define (mul-interval x y)
+  (let ((lX (lower-bound x))
+        (uX (upper-bound x))
+        (lY (lower-bound y))
+        (uY (upper-bound y)))
+    (cond ((> lX 0) (cond ((> 0 lY) (make-interval (* lX lY) (* uX uY)))
+                          ((< 0 uY) (make-interval (* lY uX) (* lX uY)))
+                          (else (make-interval (* lY uX) (* uX uY)))))
+
+          ((< lX 0) (cond ((< 0 uY) (make-interval (* uX uY) (* lX lY)))
+                          ((> 0 lY) (make-interval (* lX uY) (* uX lY)))
+			  (else (make-intervel (* lX uY) (* lx ly)))))
+
+          (else (cond ((> 0 lY) (make-interval (* lX uY) (* uX uY)))
+                      ((< 0 uY) (make-intervel (* lY uX) (* lX lY)))
+                      (else (make-interval
+                             (min (* lX uY) (* lY uX))
+                             (max (* lX lY) (* ux uY)))))))))
+
+(show (mul-interval (make-interval -3 -2) (make-interval 2 3)))
+#+END_SRC
+
+#+RESULTS: e-2-10-b
+: [-6, -6]
+
+* Exercise 2.12                                                      :solved:
+** Preset
+#+NAME: e-2-12-a
+#+BEGIN_SRC racket
+(define (make-center-width c w)
+  (make-interval (- c w) (+ c w)))
+(define (center i)
+  (/ (+ (lower-bound i) (upper-bound i)) 2))
+(define (width i)
+  (/ (- (upper-bound i) (lower-bound i)) 2))
+#+END_SRC
+
+** Answer
+#+NAME: e-2-12-b
+#+BEGIN_SRC racket
+<<e-2-11>>
+<<e-2-12-a>>
+
+(define (make-center-percent c p)
+  (make-center-width c (* (abs c) (/ p 100))))
+
+(define (percent a)
+  (* (/ (width a) (center a)) 100))
+
+(show (make-center-percent 1 50))
+(percent (make-center-percent 1 50))
+#+END_SRC
+
+#+RESULTS:
+: 50
+
+* Exercise 2.13                                                      :solved:
+** Answer
+#+BEGIN_VERSE
+For any two intervals I0 and I1,
+
+I0 = C0 ± P0 = [C0 - C0 * P0, C0 + C0 * P0]
+I1 = C1 ± P1 = [C1 - C1 * P1, C1 + C1 * P1]
+
+For All numbers are positive,
+
+I = I0 * I1 
+I = C ± P
+C = C0 * C1 + P0 * P1
+P = C0 * P1 + C1 * P0
+
+R = P / C = (C0 * P1 + C1 * P0) / (C0 * C1 + P0 * P1)
+  = (C0 / P0 + C1 / P1) / ((C0 * C1) / (P0 * P1) + 1)
+  = (R0 + R1) / (R0 * R1 + 1)
+#+END_VERSE
+
+* Exercise 2.14
+After considerable work, Alyssa P. Hacker delivers her finished
+system. Several years later, after she has forgotten all about
+it, she gets a frenzied call from an irate user, Lem E. Tweakit.
+It seems that Lem has noticed that the formula for parallel
+resistors can be written in two algebraically equivalent ways:
+=(R1 * R2) / (R1 + R2)= and =1 / (1 / R1 + 1 / R2)=.
+
+He has written the following two programs, each of which
+computes the parallel-resistors formula differently:
+
+#+NAME: e-2-13
+#+BEGIN_SRC scheme
+(define (par1 r1 r2)
+  (div-interval (mul-interval r1 r2)
+                (add-interval r1 r2)))
+(define (par2 r1 r2)
+  (let ((one (make-interval 1 1)))
+    (div-interval
+     one (add-interval (div-interval one r1)
+                       (div-interval one r2)))))
+#+END_SRC
+
+Lem complains that Alyssa’s program gives different answers for
+the two ways of computing. Thisis is a serious complaint.
+
+Demonstrate that Lem is right. Investigate the behavior of the
+system on a variety of arithmetic expressions. Make some
+intervals A and B, and use them in computing the expressions
+=A / A= and =A / B=. You will get the most insight by using
+intervals whose width is a small percentage of the center value.
+Examine the results of the computation in center-percent form
+(see Exercise 2.12).
+
+* Exercise 2.15
+Eva Lu Ator, another user, has also noticed the different
+intervals computed by different but algebraically equivalent
+expressions. She says that a formula to compute with intervals
+using Alyssa’s system will produce tighter error bounds if it
+can be writtten in such a form that no variable that represents
+an uncertain number is repeated. Thus, she says, ~par2~ is a
+“better” program for parallel resistances than ~par1~. Is she
+right? Why?
+
+* Exercise 2.16
+Explain, in general, why equivalent algebraic expressions may
+lead to different answers. Can you devise an interval-arithmetic
+package that does not have this shortcoming, or is this task
+impossible? (Warning: This is problem is very difficult.)

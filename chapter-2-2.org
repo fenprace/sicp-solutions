@@ -1,4 +1,4 @@
-#+TITLE: SICP Chapter 2
+#+TITLE: SICP 2.2
 #+STARTUP: overview
 #+STARTUP: indent
 #+PROPERTY: header-args :noweb yes
@@ -26,510 +26,10 @@ To execute code blocks in this file, you need ~ob-racket~ installed.
 (define nil '())
 #+END_SRC
 
-* Chapter 2 Building Abstractions with Data
-:PROPERTIES:
-:VISIBILITY: children
-:END:
-** 2.1 Introduction to Data Abstraction
-*** Exercise 2.1                                                   :solved:
-**** Answer
-#+BEGIN_SRC racket
-(define (make-rat n d)
-  (if (< d 0)
-      (cons (- n) (- d)) 
-      (cons n d))) 
-#+END_SRC
+#+RESULTS: nil
 
-*** Exercise 2.2                                                   :solved:
-**** Preset
-#+NAME: print-point
-#+BEGIN_SRC racket
-(define (print-point p)
-  (newline)
-  (display "(")
-  (display (x-point p))
-  (display ",")
-  (display (y-point p))
-  (display ")"))
-#+END_SRC
-
-**** Answer
-#+NAME: midpoint-segment
-#+BEGIN_SRC racket
-(define make-segment cons)
-(define start-segment car)
-(define end-segment cdr)
-(define make-point cons)
-(define x-point car)
-(define y-point cdr)
-
-(define (avg2 x y) (/ (+ x y) 2))
-
-(define (midpoint-segment seg)
-  (define start (start-segment seg))
-  (define start-x (x-point start))
-  (define start-y (y-point start))
-  (define end (end-segment seg))
-  (define end-x (x-point end))
-  (define end-y (y-point end))
-  (make-point (avg2 start-x end-x) (avg2 start-y end-y)))
-#+END_SRC
-
-#+BEGIN_SRC racket
-<<print-point>>
-<<midpoint-segment>>
-
-(print-point
- (midpoint-segment
-  (make-segment
-   (make-point 1.5 1)
-   (make-point 3 3))))
-#+END_SRC
-
-#+RESULTS:
-: 
-: (2.25,2)
-
-*** Exercise 2.3                                                   :solved:
-**** Answer
-First representation:
-#+NAME: make-rect-1
-#+BEGIN_SRC racket
-(define (make-rect a b c d) (cons a (cons b (cons c d))))
-
-(define (a-rect rect) (car rect))
-(define (b-rect rect) (cadr rect))
-(define (c-rect rect) (caddr rect))
-(define (d-rect rect) (cdddr rect))
-#+END_SRC
-
-Another representation:
-#+NAME: make-rect-2
-#+BEGIN_SRC racket
-(define (make-rect a b c d) (cons a (cons b (cons c (cons d '())))))
-
-(define (a-rect rect) (car rect))
-(define (b-rect rect) (cadr rect))
-(define (c-rect rect) (caddr rect))
-(define (d-rect rect) (cadddr rect))
-#+END_SRC
-
-#+NAME: peri-rect
-#+BEGIN_SRC racket
-(define (square n) (* n n))
-
-(define (distance a b)
-  (define x-a (x-point a))
-  (define y-a (y-point a))
-  (define x-b (x-point b))
-  (define y-b (y-point b))
-  (sqrt (+ (square (- x-a x-b)) (square (- y-a y-b)))))
-
-(define (peri-rect rect)
-  (define a (a-rect rect))
-  (define b (b-rect rect))
-  (define c (c-rect rect))
-  (define d (d-rect rect))
-  (+ (distance a b) (distance b c) (distance c d) (distance d a)))
-#+END_SRC
-
-Validate the 1st representation:
-#+BEGIN_SRC racket
-<<make-rect-1>>
-<<midpoint-segment>>
-<<peri-rect>>
-
-(define rect (make-rect
-              (make-point 0 0)
-              (make-point 0 1)
-              (make-point 2 1)
-              (make-point 2 0)))
-
-(peri-rect rect)
-#+END_SRC
-
-#+RESULTS:
-: 6
-
-Validate the 2nd representation:
-#+BEGIN_SRC racket
-<<make-rect-2>>
-<<midpoint-segment>>
-<<peri-rect>>
-
-(define rect (make-rect
-              (make-point 0 0)
-              (make-point 0 1)
-              (make-point 2 1)
-              (make-point 2 0)))
-
-(peri-rect rect)
-#+END_SRC
-
-#+RESULTS:
-: 6
-
-*** Exercise 2.4                                                   :solved:
-**** Preset
-
-#+NAME: cons-car
-#+BEGIN_SRC racket
-(define (cons x y)
-  (lambda (m) (m x y)))
-(define (car z)
-  (z (lambda (p q) p)))
-#+END_SRC
-**** Answer
-For given X and Y, ~(cons X Y)~ equals to
-~(lambda (m) X Y)~. Calling ~(car (cons X Y))~, is calling
-~((lambda (m) (m X Y)) (lambda (p q) p))~, which is calling
-~((lambda (p q) p) X Y)~, and yields X. 
-Thus this definition fulfills that:
-#+BEGIN_QUOTE
-For any objects x and y, if z is ~(cons x y)~ then ~(car z)~
-is x and ~(cdr z)~ is y.
-#+END_QUOTE
-
-~cdr~ definition:
-#+BEGIN_SRC racket
-<<cons-car>>
-(define (cdr z)
-  (z (lambda (p q) q)))
-
-(cdr (cons 2 1))
-#+END_SRC
-
-#+RESULTS:
-: 1
-
-*** Exercise 2.5                                                   :solved:
-**** Answer
-#+BEGIN_SRC racket
-(define (cons a b)
-  (* (expt 2 a) (expt 3 b)))
-(define (car p)
-  (let-values ([(q r) (quotient/remainder p 2)])
-    (cond [(= q 0) 0]
-          [(= r 0) (+ (car q) 1)]
-          [else  0])))
-(define (z-cdr p)
-  (let-values ([(q r) (quotient/remainder p 3)])
-    (cond [(= q 0) 0]
-          [(= r 0) (+ (cdr q) 1)]
-          [else  0])))
-
-(car (cons 3 4))
-#+END_SRC
-
-#+RESULTS:
-: 3
-
-*** Exercise 2.6                                                   :solved:
-**** Answer
-#+BEGIN_VERSE
-Forgive me for using Haskell-style function annotation here.
-First we have:
-
-add-1 n = f -> x -> f ((n f) x)
-      0 = f -> x -> x
-
-We can get:
-
-1 = add-1 0
-  = f -> x -> f ((0 f) x)
-  = f -> x -> f x
-  
-2 = add-1 1
-  = f -> x -> f ((1 f) x)
-  = f -> x -> f (f x)
-
-We can guess out that:
-
-n = f -> x -> f^n x
-
-add m n = f -> x -> f^m (f^n x)
-        = f -> x -> m f (n f x)
-
-Now we have the direct definition of ~add~, that is:
-
-add = m -> n -> f -> x -> m f (n f x)
-
-Validate this:
-
-add 1 1 = f -> x -> 1 f (1 f x)
-        = f -> x -> f(f(x))
-        = 2
-#+END_VERSE
-
-#+BEGIN_SRC racket
-(define one
-  (lambda (f)
-    (lambda (x)
-      (f x))))
-
-(define two
-  (lambda (f)
-    (lambda (x)
-      (f (f x)))))
-
-(define (add m n)
-  (lambda (f)
-    (lambda (x) ((m f) ((n f) x)))))
-
-;; A validate function
-;; As we know n f x = f^n x, if f = this vf, then
-;; vf x = vf^n x, so if we call n vf 0, it should simply
-;; yields n
-(define (vf a) (+ 1 a))
-
-(((add one two) vf) 0)
-#+END_SRC
-
-#+RESULTS:
-: 3
-
-*** Exercise 2.7                                                   :solved:
-**** Preset
-#+NAME: e-2-7-a
-#+BEGIN_SRC racket
-(define (add-interval x y)
-  (make-interval (+ (lower-bound x) (lower-bound y))
-                 (+ (upper-bound x) (upper-bound y))))
-
-(define (mul-interval x y)
-  (let ((p1 (* (lower-bound x) (lower-bound y)))
-        (p2 (* (lower-bound x) (upper-bound y)))
-        (p3 (* (upper-bound x) (lower-bound y)))
-        (p4 (* (upper-bound x) (upper-bound y))))
-    (make-interval (min p1 p2 p3 p4)
-                   (max p1 p2 p3 p4))))
-
-(define (div-interval x y)
-  (mul-interval
-   x
-   (make-interval (/ 1.0 (upper-bound y))
-                  (/ 1.0 (lower-bound y)))))
-#+END_SRC
-
-#+NAME: e-2-7-b
-#+BEGIN_SRC racket
-(define (make-interval a b) (cons a b))
-#+END_SRC
-
-**** Answer
-#+NAME: e-2-7-c
-#+BEGIN_SRC racket
-(define (lower-bound interval)
-  (car interval))
-
-(define (upper-bound interval)
-  (cdr interval))
-#+END_SRC
-
-*** Exercise 2.8                                                   :solved:
-**** Answer
-The difference of two intervals should equal to the first
-interval plus the negative of the second interval.
-
-#+NAME: e-2-8
-#+BEGIN_SRC racket 
-<<e-2-7-a>>
-<<e-2-7-b>>
-<<e-2-7-c>>
-
-(require racket/format)
-
-(define (show a)
-  (~a "[" (lower-bound a) ", " (upper-bound a) "]"))
-
-(define (neg-interval a)
-  (make-interval
-   (- (upper-bound a))
-   (- (lower-bound a))))
-
-(define (sub-interval a b)
-  (add-interval a (neg-interval b)))
-
-(show (sub-interval (make-interval 1 2)  (make-interval 1 2)))
-#+END_SRC
-
-#+RESULTS: e-2-8
-: [-1, 1]
-
-*** Exercise 2.9                                                   :solved:
-**** Answer
-#+BEGIN_VERSE
-For any tow intervals I0 and I1,
-if I0 = [a, b]
-   I1 = [x, y]
-then width(I0) = (b - a) / 2
-     width(I1) = (y - x) / 2
-width(I0 + I1) = width([a + x, b + y])
-               = ((b + y) - (a + x)) / 2
-               = (b - a) / 2 + (y - x) / 2
-               = width(I0) + width(I1)
-Thus width(I0 + I1) = width(I0) + width(I1)
-
-For example, I0 = [0, 0], I1 = [0, 1],
-width(I0) = 0, width(I1) = 0.5,
-width(I0 * I1) = width([0, 1]) = 0.5 != with(I0) * width(I1)
-#+END_VERSE     
-
-*** Exercise 2.10                                                  :solved:
-**** Answer
-#+NAME: e-2-10
-#+BEGIN_SRC racket
-<<e-2-8>>
-
-(define (div-interval x y)
-  (if (<= (* (lower-bound y) (upper-bound y)) 0)
-      (error "Interval Spans Zero")
-      (mul-interval
-       x
-       (make-interval (/ 1.0 (upper-bound y))
-                      (/ 1.0 (lower-bound y))))))
-
-(show (div-interval (make-interval 1 2) (make-interval 1 1)))
-#+END_SRC
-
-#+RESULTS: e-2-10
-: [1.0, 2.0]
-
-*** Exercise 2.11                                                  :solved:
-**** Answer
-#+NAME: e-2-11
-#+BEGIN_SRC racket
-<<e-2-10>>
-
-(define (mul-interval x y)
-  (let ((lX (lower-bound x))
-        (uX (upper-bound x))
-        (lY (lower-bound y))
-        (uY (upper-bound y)))
-    (cond ((> lX 0) (cond ((> 0 lY) (make-interval (* lX lY) (* uX uY)))
-                          ((< 0 uY) (make-interval (* lY uX) (* lX uY)))
-                          (else (make-interval (* lY uX) (* uX uY)))))
-
-          ((< lX 0) (cond ((< 0 uY) (make-interval (* uX uY) (* lX lY)))
-                          ((> 0 lY) (make-interval (* lX uY) (* uX lY)))
-			  (else (make-intervel (* lX uY) (* lx ly)))))
-
-          (else (cond ((> 0 lY) (make-interval (* lX uY) (* uX uY)))
-                      ((< 0 uY) (make-intervel (* lY uX) (* lX lY)))
-                      (else (make-interval
-                             (min (* lX uY) (* lY uX))
-                             (max (* lX lY) (* ux uY)))))))))
-
-(show (mul-interval (make-interval -3 -2) (make-interval 2 3)))
-#+END_SRC
-
-#+RESULTS: e-2-10-b
-: [-6, -6]
-
-*** Exercise 2.12                                                  :solved:
-**** Preset
-#+NAME: e-2-12-a
-#+BEGIN_SRC racket
-(define (make-center-width c w)
-  (make-interval (- c w) (+ c w)))
-(define (center i)
-  (/ (+ (lower-bound i) (upper-bound i)) 2))
-(define (width i)
-  (/ (- (upper-bound i) (lower-bound i)) 2))
-#+END_SRC
-
-**** Answer
-#+NAME: e-2-12-b
-#+BEGIN_SRC racket
-<<e-2-11>>
-<<e-2-12-a>>
-
-(define (make-center-percent c p)
-  (make-center-width c (* (abs c) (/ p 100))))
-
-(define (percent a)
-  (* (/ (width a) (center a)) 100))
-
-(show (make-center-percent 1 50))
-(percent (make-center-percent 1 50))
-#+END_SRC
-
-#+RESULTS:
-: 50
-
-*** Exercise 2.13                                                  :solved:
-**** Answer
-#+BEGIN_VERSE
-For any two intervals I0 and I1,
-
-I0 = C0 ± P0 = [C0 - C0 * P0, C0 + C0 * P0]
-I1 = C1 ± P1 = [C1 - C1 * P1, C1 + C1 * P1]
-
-For All numbers are positive,
-
-I = I0 * I1 
-I = C ± P
-C = C0 * C1 + P0 * P1
-P = C0 * P1 + C1 * P0
-
-R = P / C = (C0 * P1 + C1 * P0) / (C0 * C1 + P0 * P1)
-  = (C0 / P0 + C1 / P1) / ((C0 * C1) / (P0 * P1) + 1)
-  = (R0 + R1) / (R0 * R1 + 1)
-#+END_VERSE
-
-*** Exercise 2.14
-After considerable work, Alyssa P. Hacker delivers her finished
-system. Several years later, after she has forgotten all about
-it, she gets a frenzied call from an irate user, Lem E. Tweakit.
-It seems that Lem has noticed that the formula for parallel
-resistors can be written in two algebraically equivalent ways:
-=(R1 * R2) / (R1 + R2)= and =1 / (1 / R1 + 1 / R2)=.
-
-He has written the following two programs, each of which
-computes the parallel-resistors formula differently:
-
-#+NAME: e-2-13
-#+BEGIN_SRC scheme
-(define (par1 r1 r2)
-  (div-interval (mul-interval r1 r2)
-                (add-interval r1 r2)))
-(define (par2 r1 r2)
-  (let ((one (make-interval 1 1)))
-    (div-interval
-     one (add-interval (div-interval one r1)
-                       (div-interval one r2)))))
-#+END_SRC
-
-Lem complains that Alyssa’s program gives different answers for
-the two ways of computing. Thisis is a serious complaint.
-
-Demonstrate that Lem is right. Investigate the behavior of the
-system on a variety of arithmetic expressions. Make some
-intervals A and B, and use them in computing the expressions
-=A / A= and =A / B=. You will get the most insight by using
-intervals whose width is a small percentage of the center value.
-Examine the results of the computation in center-percent form
-(see Exercise 2.12).
-
-*** Exercise 2.15
-Eva Lu Ator, another user, has also noticed the different
-intervals computed by different but algebraically equivalent
-expressions. She says that a formula to compute with intervals
-using Alyssa’s system will produce tighter error bounds if it
-can be writtten in such a form that no variable that represents
-an uncertain number is repeated. Thus, she says, ~par2~ is a
-“better” program for parallel resistances than ~par1~. Is she
-right? Why?
-
-*** Exercise 2.16
-Explain, in general, why equivalent algebraic expressions may
-lead to different answers. Can you devise an interval-arithmetic
-package that does not have this shortcoming, or is this task
-impossible? (Warning: This is problem is very difficult.)
-
-** 2.2 Hierarchical Data and the Closure Property
-*** Exercise 2.17                                                  :solved:
-**** Answer
+* Exercise 2.17                                                      :solved:
+** Answer
 #+BEGIN_SRC racket :lang racket
 (define (last-pair list)
   (if (null? (cdr list))
@@ -542,8 +42,8 @@ impossible? (Warning: This is problem is very difficult.)
 #+RESULTS:
 : 4
 
-*** Exercise 2.18                                                  :solved:
-**** Answer
+* Exercise 2.18                                                      :solved:
+** Answer
 #+BEGIN_SRC racket :lang racket
 <<nil>>
 
@@ -563,7 +63,7 @@ impossible? (Warning: This is problem is very difficult.)
 #+RESULTS:
 | 5 | 4 | 3 | 2 | 1 |
 
-*** Exercise 2.19
+* Exercise 2.19
 Consider the change-counting program of Section 1.2.2. It would
 be nice to be able to easily change the currency used by the
 program, so that we could compute the number of ways to change a
@@ -613,8 +113,8 @@ denomination~, and ~no-more?~ in terms of primitive operations
 on list structures. Does the order of the list ~coin-values~
 affect the answer produced by ~cc~? Why or why not?
 
-*** Exercise 2.20                                                  :solved:
-**** Answer
+* Exercise 2.20                                                      :solved:
+** Answer
 #+BEGIN_SRC racket
 (define (same-parity-iter parity lst)
   (cond [(empty? lst) lst]
@@ -631,8 +131,8 @@ affect the answer produced by ~cc~? Why or why not?
 #+RESULTS:
 | 1 | 3 | 5 |
 
-*** Exercise 2.21                                                  :solved:
-**** Answer
+* Exercise 2.21                                                      :solved:
+** Answer
 #+BEGIN_SRC racket 
 (define (square-list items)
   (if (null? items)
@@ -655,8 +155,8 @@ affect the answer produced by ~cc~? Why or why not?
 #+RESULTS:
 | 1 | 4 | 9 | 16 |
 
-*** Exercise 2.22                                                  :solved:
-**** Answer
+* Exercise 2.22                                                      :solved:
+** Answer
 Because when you do ~(cons (square (car things)) answer)~, you
 are putting ~(square (car things))~ to the head of answer. It
 will act like a 'FILO' stack.
@@ -666,8 +166,8 @@ For the second program, ~answer~ is a list, however
 creates a structure like ~(((nil . 1) . 4) . 9)~, which is not
 a list.
 
-*** Exercise 2.23                                                  :solved:
-**** Answer
+* Exercise 2.23                                                      :solved:
+** Answer
 #+BEGIN_SRC racket
 (define (for-each f lst)
   (if (empty? lst)
@@ -682,8 +182,8 @@ a list.
 #+RESULTS:
 : 5732188#t
 
-*** Exercise 2.24                                                  :solved:
-**** Answer
+* Exercise 2.24                                                      :solved:
+** Answer
 The output is:
 #+BEGIN_SRC racket :lang racket
 (1 . ((2 . ((3 . (4 . nil)) . nil) ) . nil)
@@ -705,8 +205,8 @@ The tree graph:
      3 4
 #+END_VERSE 
 
-*** Exercise 2.25                                                  :solved:
-**** Answer
+* Exercise 2.25                                                      :solved:
+** Answer
 #+BEGIN_SRC racket
 (define (solve l)
   (cadr (caddr l)))
@@ -737,8 +237,8 @@ The tree graph:
 #+RESULTS:
 : 7
 
-*** Exercise 2.26                                                  :solved:
-**** Preset
+* Exercise 2.26                                                      :solved:
+** Preset
 #+NAME: e-2-26-a
 #+BEGIN_SRC racket
 (define x (list 1 2 3))
@@ -752,7 +252,7 @@ The tree graph:
 (list x y)
 #+END_SRC
 
-**** Answer
+** Answer
 The output is:
 
 #+BEGIN_SRC racket
@@ -788,8 +288,8 @@ To check it:
 | 1 | 2 | 3 |
 | 4 | 5 | 6 |
 
-*** Exercise 2.27                                                  :solved:
-**** Answer
+* Exercise 2.27                                                      :solved:
+** Answer
 #+BEGIN_SRC racket
 (define (reverse-iter lst reversed)
   (cond [(empty? lst) reversed]
@@ -811,8 +311,8 @@ To check it:
 #+RESULTS:
 | (8 7 6) | 5 | 4 | (3 2) | 1 |
 
-*** Exercise 2.28                                                  :solved:
-**** Answer
+* Exercise 2.28                                                      :solved:
+** Answer
 #+BEGIN_SRC racket
 (define (fringe-iter tree result)
   (cond [(empty? tree) result]
@@ -830,8 +330,8 @@ To check it:
 #+RESULTS:
 | 1 | 2 | 3 | 4 | 5 |
 
-*** Exercise 2.29                                                  :solved:
-**** Preset
+* Exercise 2.29                                                      :solved:
+** Preset
 #+NAME: e-2-29-a
 #+BEGIN_SRC racket
 (define (make-mobile left right)
@@ -850,8 +350,8 @@ To check it:
 (define (make-branch length structure)
   (cons length structure))
 #+END_SRC
-**** Answer
-***** a
+** Answer
+*** a
 #+NAME: e-2-29-d
 #+BEGIN_SRC racket
 (define (left-branch mob) (car mob))
@@ -860,7 +360,7 @@ To check it:
 (define (branch-structure brn) (cadr brn))
 #+END_SRC
 
-***** b
+*** b
 #+NAME: e-2-29-e
 #+BEGIN_SRC racket
 <<e-2-29-a>>
@@ -889,7 +389,7 @@ To check it:
 #+RESULTS: e-2-29-e
 : 20
 
-***** c
+*** c
 #+NAME: e-2-29-f
 #+BEGIN_SRC racket
 <<e-2-29-e>>
@@ -922,13 +422,13 @@ To check it:
 #+RESULTS: e-2-29-f
 : #t
 
-***** d
+*** d
 I only need to change the selectors and constructors, which
 are ~left-branch~, ~right-branch~, ~branch-length~ and
 ~branch-structure~ functions.
 
-*** Exercise 2.30                                                  :solved:
-**** Answer
+* Exercise 2.30                                                      :solved:
+** Answer
 Implement directly:
 
 #+BEGIN_SRC racket
@@ -970,13 +470,13 @@ Implement with ~map~:
 #+RESULTS:
 | 1 | (4 (9 16) 25) | (36 49) |
 
-*** Exercise 2.31                                                  :solved:
-**** Preset
+* Exercise 2.31                                                      :solved:
+** Preset
 #+NAME: e-2-31-a
 #+BEGIN_SRC racket
 (define (square-tree tree) (tree-map square tree))
 #+END_SRC
-**** Answer
+** Answer
 #+BEGIN_SRC racket
 <<e-2-31-a>>
 
@@ -995,8 +495,8 @@ Implement with ~map~:
 #+RESULTS:
 | 1 | 4 | (9 16) |
 
-*** Exercise 2.32                                                  :solved:
-**** Answer
+* Exercise 2.32                                                      :solved:
+** Answer
 
 #+BEGIN_SRC racket
 (define nil '())
@@ -1020,8 +520,8 @@ Implement with ~map~:
 | 1 | 2 |   |
 | 1 | 2 | 3 |
 
-*** Exercise 2.33                                                  :solved:
-**** Answer
+* Exercise 2.33                                                      :solved:
+** Answer
 Just put the definition of ~accumulate~ here:
 
 #+NAME: accumulate
@@ -1072,8 +572,8 @@ Just put the definition of ~accumulate~ here:
 #+RESULTS:
 : 4
 
-*** Exercise 2.34                                                  :solved:
-**** Answer
+* Exercise 2.34                                                      :solved:
+** Answer
 
 #+BEGIN_SRC racket
 <<accumulate>>
@@ -1090,9 +590,8 @@ Just put the definition of ~accumulate~ here:
 #+RESULTS:
 : 79
 
-
-*** Exercise 2.35                                                  :solved:
-**** Answer
+* Exercise 2.35                                                      :solved:
+** Answer
 
 #+BEGIN_SRC racket
 <<accumulate>>
@@ -1109,8 +608,8 @@ Just put the definition of ~accumulate~ here:
 #+RESULTS:
 : 5
 
-*** Exercise 2.36                                                  :solved:
-**** Answer
+* Exercise 2.36                                                      :solved:
+** Answer
 #+NAME: accumulate-n
 #+BEGIN_SRC racket
 <<nil>>
@@ -1133,14 +632,14 @@ Just put the definition of ~accumulate~ here:
 #+RESULTS:
 | 22 | 26 | 30 |
 
-*** Exercise 2.37                                                  :solved:
-**** Preset
+* Exercise 2.37                                                      :solved:
+** Preset
 #+NAME: dot-product
 #+BEGIN_SRC racket
 (define (dot-product v w)
   (accumulate + 0 (map * v w)))
 #+END_SRC
-**** Answer
+** Answer
 
 #+NAME: e-2-37
 #+BEGIN_SRC racket
@@ -1192,8 +691,8 @@ Just put the definition of ~accumulate~ here:
 |  7 |  7 |
 | 14 | 14 |
 
-*** Exercise 2.38                                                  :solved:
-**** Preset
+* Exercise 2.38                                                      :solved:
+** Preset
 #+NAME: fold-left
 #+BEGIN_SRC racket
 (define (fold-left op initial sequence)
@@ -1204,15 +703,15 @@ Just put the definition of ~accumulate~ here:
               (cdr rest))))
   (iter initial sequence))
 #+END_SRC
-**** Answer
+** Answer
 The values are: ~3 / 2~, ~1 / 6~, ~(1 (2 (3 nil)))~,
 ~(((nil 1) 2) 3)~.
 
 An ~op~ should satisfy that ~(op x y) = (op y x)~ to guarantee
 that ~fold-right~ and ~fold-left~ will produce same values.
 
-*** Exercise 2.39                                                  :solved:
-**** Answer
+* Exercise 2.39                                                      :solved:
+** Answer
 #+BEGIN_SRC racket
 <<nil>>
 <<accumulate>>
@@ -1243,8 +742,8 @@ that ~fold-right~ and ~fold-left~ will produce same values.
 #+RESULTS:
 | 4 | 3 | 2 | 1 |
 
-*** Exercise 2.40                                                  :solved:
-**** Preset
+* Exercise 2.40                                                      :solved:
+** Preset
 #+NAME: flatmap
 #+BEGIN_SRC racket
 (define (flatmap proc seq)
@@ -1259,7 +758,7 @@ that ~fold-right~ and ~fold-left~ will produce same values.
         [else nil]))
 #+END_SRC
 
-**** Answer
+** Answer
 #+BEGIN_SRC racket
 <<nil>>
 <<accumulate>>
@@ -1300,9 +799,8 @@ The definition of ~prime-sum-pairs~ can be simplified to:
        (filter prime-sum? (unique-pairs n))))
 #+END_SRC
 
-
-*** Exercise 2.41                                                  :solved:
-**** Answer
+* Exercise 2.41                                                      :solved:
+** Answer
 #+BEGIN_SRC racket
 <<nil>>
 <<flatmap>>
@@ -1330,9 +828,8 @@ The definition of ~prime-sum-pairs~ can be simplified to:
 | 4 | 3 | 1 |
 | 5 | 2 | 1 |
 
-
-*** Exercise 2.42                                                  :solved:
-**** Preset
+* Exercise 2.42                                                      :solved:
+** Preset
 #+NAME: queens
 #+BEGIN_SRC racket
 (define (queens board-size)
@@ -1351,7 +848,7 @@ The definition of ~prime-sum-pairs~ can be simplified to:
   (queen-cols board-size))
 #+END_SRC
 
-**** Answer
+** Answer
 #+BEGIN_SRC racket
 (define (make-queen col row) (cons col row))
 (define col-queen car)
@@ -1370,6 +867,8 @@ The definition of ~prime-sum-pairs~ can be simplified to:
 
 (define empty-board '())
 
+(define times 0)
+
 (define (adjoin-position row size positions)
   (cons (make-queen size row) positions))
 
@@ -1386,20 +885,102 @@ The definition of ~prime-sum-pairs~ can be simplified to:
 <<enumerate-interval>>
 <<queens>>
 
-(queens 5)
+(queens 4)
 #+END_SRC
 
 #+RESULTS:
-| (5 . 4) | (4 . 2) | (3 . 5) | (2 . 3) | (1 . 1) |
-| (5 . 3) | (4 . 5) | (3 . 2) | (2 . 4) | (1 . 1) |
-| (5 . 5) | (4 . 3) | (3 . 1) | (2 . 4) | (1 . 2) |
-| (5 . 4) | (4 . 1) | (3 . 3) | (2 . 5) | (1 . 2) |
-| (5 . 5) | (4 . 2) | (3 . 4) | (2 . 1) | (1 . 3) |
-| (5 . 1) | (4 . 4) | (3 . 2) | (2 . 5) | (1 . 3) |
-| (5 . 2) | (4 . 5) | (3 . 3) | (2 . 1) | (1 . 4) |
-| (5 . 1) | (4 . 3) | (3 . 5) | (2 . 2) | (1 . 4) |
-| (5 . 3) | (4 . 1) | (3 . 4) | (2 . 2) | (1 . 5) |
-| (5 . 2) | (4 . 4) | (3 . 1) | (2 . 3) | (1 . 5) |
+| (4 . 3) | (3 . 1) | (2 . 4) | (1 . 2) |
+| (4 . 2) | (3 . 4) | (2 . 1) | (1 . 3) |
 
-*** Exercise 2.43
-**** Answer
+* Exercise 2.43
+* Exercise 2.44                                                      :solved:
+** Answer
+#+BEGIN_SRC racket
+(require sicp-pict)
+
+(define (up-split painter n)
+  (if (= n 0)
+      painter
+      (let ((smaller (up-split painter (- n 1))))
+        (below painter (beside smaller smaller)))))
+
+(paint (up-split einstein 3))
+#+END_SRC
+
+#+RESULTS:
+: (object:image-snip% ... ...)
+
+
+* Exercise 2.45                                                      :solved:
+** Answer
+#+BEGIN_SRC racket
+(require sicp-pict)
+
+(define (split painterA painterB)
+  (define (sub-split painter n)
+    (if (= n 0)
+        painter
+        (let ((smaller (sub-split painter (- n 1))))
+          (painterA painter (painterB smaller smaller)))))
+  sub-split)
+
+(define right-split (split beside below))
+(define up-split (split below beside))
+
+(paint (right-split einstein 3))
+(paint (up-split einstein 3))
+#+END_SRC
+
+#+RESULTS:
+: (object:image-snip% ... ...)
+: (object:image-snip% ... ...)
+
+* Exercise 2.46                                                      :solved:
+#+BEGIN_SRC racket
+(define (make-vect x y) (cons x y))
+(define (xcor-vect v) (car v))
+(define (ycor-vect v) (cdr v))
+
+(define (map-vect op)
+  (lambda (a b)
+    (make-vect (op (xcor-vect a) (xcor-vect b))
+               (op (ycor-vect a) (ycor-vect b)))))
+
+(define add-vect (map-vect +))
+(define sub-vect (map-vect -))
+(define (scale-vect s v)
+  ((map-vect *) (make-vect s s) v))
+
+(add-vect (make-vect 1 2) (make-vect 3 4))
+(scale-vect 3 (make-vect 3 4))
+#+END_SRC
+
+* E 2.47                                                             :solved:
+** Answer
+The first implementation:
+#+BEGIN_SRC racket
+(define (make-frame origin edge1 edge2) (list origin edge1 edge2))
+
+(define (origin-frame f) (car f))
+(define (edge1-frame f) (cadr f))
+(define (edge2-frame f) (caddr f))
+
+(edge2-frame (make-frame 'o 'e1 'e2))
+#+END_SRC
+
+#+RESULTS:
+: e2
+
+The second implementation:
+#+BEGIN_SRC racket
+(define (make-frame origin edge1 edge2) (cons origin (cons edge1 edge2)))
+
+(define (origin-frame f) (car f))
+(define (edge1-frame f) (cadr f))
+(define (edge2-frame f) (cddr f))
+
+(edge2-frame (make-frame 'o 'e1 'e2))
+#+END_SRC
+
+#+RESULTS:
+: e2

@@ -1,0 +1,74 @@
+#+TITLE: SICP 2.3
+#+STARTUP: overview
+#+STARTUP: indent
+#+PROPERTY: header-args :noweb yes
+#+PROPERTY: header-args:racket :lang racket
+
+* Preset
+To execute code blocks in this file, you need ~ob-racket~ installed.
+
+#+BEGIN_SRC emacs-lisp
+(setq org-confirm-babel-evaluate nil)
+(use-package racket-mode)
+(use-package ob-racket
+  :load-path "~/.emacs.d/packages"
+  :after org
+  :pin manual
+  :config
+  (append '((racket . t) (scribble . t)) org-babel-load-languages))
+#+END_SRC
+
+#+RESULTS:
+: t
+
+#+NAME: nil
+#+BEGIN_SRC racket
+(define nil '())
+#+END_SRC
+
+#+RESULTS: nil
+
+* E 2.53                                                             :sovled:
+** Preset
+#+NAME: memq
+#+BEGIN_SRC racket
+(define (memq item x)
+  (cond ((null? x) false)
+        ((eq? item (car x)) x)
+        (else (memq item (cdr x)))))
+#+END_SRC
+
+** Answer
+#+BEGIN_SRC racket
+(list 'a 'b 'c)       ; '(a b c)
+(list (list 'george)) ; '((george))
+
+(cdr '((x1 x2) (y1 y2))) ; '((y1 y2))
+; '((x1 x2) (y1 y2)) == (list '(x1 x2) '(y1 y2))
+;                    == '(cons '(x1 x2) (cons '(y1 y2) '()))
+
+
+(cadr '((x1 x2) (y1 y2)))               ; '(y1 y2)
+(pair? (car '(a short list)))           ; #f
+(memq 'red '((red shoes) (blue socks))) ; #f
+(memq 'red '(red shoes blue socks))     ; '(red shoes blue socks)
+#+END_SRC
+
+#+RESULTS:
+| a | b | c |
+
+* E 2.54                                                             :sovled:
+** Answer
+#+BEGIN_SRC racket
+(define (equal? x y)
+  (if (eq? x y)
+      #t
+      (if (and (pair? x) (pair? y))
+          (and (equal? (car x) (car y))
+               (equal? (cdr x) (cdr y)))
+          #f)))
+#+END_SRC
+
+* E 2.55                                                             :sovled:
+** Answer
+~(car ''abr)~ == ~(car '(quote abr))~ == ~'quote~
